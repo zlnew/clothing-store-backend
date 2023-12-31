@@ -29,28 +29,27 @@ class TransactionController extends Controller
             ->where('user_id', $request->user()->id);
 
         if (isset($request->status) && $request->status === 'active') {
-            $this->transaction = $this->transaction
-                ->where('status', TransactionStatus::PENDING)
-                ->orWhere('status', TransactionStatus::SETTLEMENT)
-                ->orWhere('status', TransactionStatus::ON_PROCESS)
-                ->orWhere('status', TransactionStatus::ON_PROCESS);
+            $this->transaction->where(function ($query) {
+                $query->where('status', TransactionStatus::PENDING)
+                    ->orWhere('status', TransactionStatus::SETTLEMENT)
+                    ->orWhere('status', TransactionStatus::ON_PROCESS)
+                    ->orWhere('status', TransactionStatus::ON_PROCESS);
+            });
         }
 
         if (isset($request->status) && $request->status === 'cancelled') {
-            $this->transaction = $this->transaction
-                ->where('status', TransactionStatus::CANCELLED)
-                ->orWhere('status', TransactionStatus::EXPIRED)
-                ->orWhere('status', TransactionStatus::REFUNDED);
+            $this->transaction->where(function ($query) {
+                $query->where('status', TransactionStatus::CANCELLED)
+                    ->orWhere('status', TransactionStatus::EXPIRED)
+                    ->orWhere('status', TransactionStatus::REFUNDED);
+            });
         }
 
         if (isset($request->status) && $request->status === 'finished') {
-            $this->transaction = $this->transaction
-                ->where('status', TransactionStatus::FINISHED);
+            $this->transaction->where('status', TransactionStatus::FINISHED);
         }
 
-        $this->transaction = $this->transaction
-            ->latest()
-            ->get();
+        $this->transaction = $this->transaction->latest()->get();
 
         return new TransactionResource($this->transaction);
     }

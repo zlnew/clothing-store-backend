@@ -20,31 +20,31 @@ class ProductController extends Controller
 
     public function index(Request $request)
     {
+        $this->product = $this->product->query();
+
         if (isset($request->category) && $request->category !== 'all') {
-            $this->product = $this->product
-                ->where('category', $request->category);
+            $this->product->where('category', $request->category);
         }
 
         if (isset($request->search)) {
-            $this->product = $this->product
-                ->where('name', 'LIKE', '%'.$request->search.'%');
+            $this->product->where('name', 'LIKE', '%'.$request->search.'%');
         }
 
         if (isset($request->new_release) && $request->new_release == 'true') {
-            $this->product = $this->product
-                ->where('stock', '>', 0)
+            $this->product->where('stock', '>', 0)
                 ->whereDate('created_at', '>', Carbon::now()->subDays(30))
                 ->limit(8);
         }
 
         if (isset($request->on_sale) && $request->on_sale == 'true') {
-            $this->product = $this->product
-                ->where('stock', '>', 0)
+            $this->product->where('stock', '>', 0)
                 ->where('discount_percentage', '>', 0)
                 ->limit(8);
         }
 
-        return new ProductResource($this->product->latest()->get());
+        $this->product = $this->product->latest()->get();
+
+        return new ProductResource($this->product);
     }
 
     public function store(StoreProductRequest $request)
