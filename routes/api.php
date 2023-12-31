@@ -1,9 +1,8 @@
 <?php
 
 use App\Http\Controllers\ProductController;
-use App\Http\Controllers\PromoCodeController;
 use App\Http\Controllers\TransactionController;
-use App\Http\Controllers\TransactionDetailController;
+use App\Http\Controllers\VoucherController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -18,11 +17,20 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::middleware(['auth:sanctum'])->get('/user', function (Request $request) {
-    return $request->user();
+
+Route::apiResource('products', ProductController::class)->only(['index', 'show']);
+Route::apiResource('vouchers', VoucherController::class)->only(['index', 'show']);
+
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/authorize', fn () => auth()->check());
+
+    Route::get('/user', function (Request $request) {
+        return $request->user();
+    });
+
+    Route::apiResource('products', ProductController::class)->except(['index', 'show']);
+    Route::apiResource('vouchers', VoucherController::class)->except(['index', 'show']);
+    Route::apiResource('transactions', TransactionController::class);
 });
 
-Route::apiResource('products', ProductController::class);
-Route::apiResource('promo-codes', PromoCodeController::class);
-Route::apiResource('transactions', TransactionController::class);
-Route::apiResource('transaction-details', TransactionDetailController::class);
+require __DIR__.'/auth.php';

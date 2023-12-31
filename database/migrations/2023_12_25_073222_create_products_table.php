@@ -13,14 +13,15 @@ return new class extends Migration
     {
         Schema::create('products', function (Blueprint $table) {
             $table->id();
-            $table->string('category');
-            $table->string('name');
-            $table->float('price');
+            $table->unsignedInteger('stock');
+            $table->string('category', 5);
+            $table->string('name')->unique();
+            $table->unsignedDecimal('price', 15, 2);
             $table->json('sizes');
             $table->text('image');
             $table->text('description');
             $table->text('slug');
-            $table->unsignedInteger('discount')->nullable();
+            $table->unsignedDecimal('discount_percentage', 5, 2)->default(0);
             $table->timestamps();
         });
     }

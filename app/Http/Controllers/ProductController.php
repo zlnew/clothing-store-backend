@@ -6,6 +6,7 @@ use App\Http\Requests\Product\StoreProductRequest;
 use App\Http\Requests\Product\UpdateProductRequest;
 use App\Http\Resources\ProductResource;
 use App\Models\Product;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 
 class ProductController extends Controller
@@ -29,7 +30,21 @@ class ProductController extends Controller
                 ->where('name', 'LIKE', '%'.$request->search.'%');
         }
 
-        return new ProductResource($this->product->get());
+        if (isset($request->new_release) && $request->new_release == 'true') {
+            $this->product = $this->product
+                ->where('stock', '>', 0)
+                ->whereDate('created_at', '>', Carbon::now()->subDays(30))
+                ->limit(8);
+        }
+
+        if (isset($request->on_sale) && $request->on_sale == 'true') {
+            $this->product = $this->product
+                ->where('stock', '>', 0)
+                ->where('discount_percentage', '>', 0)
+                ->limit(8);
+        }
+
+        return new ProductResource($this->product->latest()->get());
     }
 
     public function store(StoreProductRequest $request)

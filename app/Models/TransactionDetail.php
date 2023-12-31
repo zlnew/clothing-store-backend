@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -12,18 +13,16 @@ class TransactionDetail extends Model
 
     protected $fillable = [
         'transaction_id',
+        'name',
         'quantity',
+        'price',
         'size',
-        'product_id',
-        'product_category',
-        'product_name',
-        'product_price',
-        'product_sizes',
-        'product_image'
+        'product'
     ];
 
     protected $casts = [
-        'product_sizes' => 'array'
+        'price' => 'double',
+        'product' => 'array'
     ];
 
     public function transaction(): BelongsTo

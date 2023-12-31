@@ -3,8 +3,13 @@ namespace App\Enums;
 
 enum TransactionStatus: string
 {
-    case PENDING = '100';
-    case PAID = '200';
-    case FINISHED = '300';
+    case PENDING = 'pending';
+    case EXPIRED = 'expired';
+    case CANCELLED = 'cancelled';
+    case REFUNDED = 'refunded';
+    case SETTLEMENT = 'settlement';
+    case ON_PROCESS = 'on_process';
+    case ON_DELIVERY = 'on_delivery';
+    case FINISHED = 'finished';
 }
 ?>

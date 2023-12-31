@@ -3,7 +3,6 @@
 namespace App\Models;
 
 use App\Enums\ProductCategories;
-use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -18,25 +17,16 @@ class Product extends Model
         'sizes',
         'image',
         'description',
+        'discount_percentage',
         'slug',
-        'discount'
     ];
 
     protected $casts = [
       'category' => ProductCategories::class,
-      'sizes' => 'array'
+      'price' => 'double',
+      'sizes' => 'array',
+      'discount_percentage' => 'integer'
     ];
-
-    protected function discount(): Attribute
-    {
-        return Attribute::make(
-            get: function ($value) {
-                if ($value === null) { return false; }
-                return $value;
-            }
-        );
-    }
-
 
     public function getRouteKeyName()
     {

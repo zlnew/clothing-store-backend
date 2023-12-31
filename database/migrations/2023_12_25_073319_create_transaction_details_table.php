@@ -15,14 +15,11 @@ return new class extends Migration
         Schema::create('transaction_details', function (Blueprint $table) {
             $table->id();
             $table->foreignIdFor(Transaction::class)->constrained();
+            $table->string('name');
             $table->unsignedInteger('quantity');
-            $table->string('size');
-            $table->unsignedInteger('product_id');
-            $table->string('product_category');
-            $table->string('product_name');
-            $table->float('product_price');
-            $table->json('product_sizes');
-            $table->text('product_image');
+            $table->unsignedDecimal('price', 5, 2);
+            $table->string('size', 1);
+            $table->json('product');
             $table->timestamps();
         });
     }

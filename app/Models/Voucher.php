@@ -2,11 +2,11 @@
 
 namespace App\Models;
 
-use App\Enums\PromoCodeStatus;
+use App\Enums\VoucherStatus;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class PromoCode extends Model
+class Voucher extends Model
 {
     use HasFactory;
 
@@ -18,6 +18,12 @@ class PromoCode extends Model
     ];
 
     protected $casts = [
-        'status' => PromoCodeStatus::class
+        'discount_percentage' => 'integer',
+        'status' => VoucherStatus::class
     ];
+
+    public function getRouteKeyName()
+    {
+        return 'code';
+    }
 }
