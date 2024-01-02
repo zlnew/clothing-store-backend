@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\CartItemController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\TransactionController;
 use App\Http\Controllers\VoucherController;
@@ -30,7 +31,6 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::apiResource('products', ProductController::class)->except(['index', 'show']);
     Route::apiResource('vouchers', VoucherController::class)->except(['index', 'show']);
+    Route::apiResource('cart-items', CartItemController::class);
     Route::apiResource('transactions', TransactionController::class);
 });
-
-require __DIR__.'/auth.php';

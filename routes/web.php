@@ -19,3 +19,5 @@ Route::get('/', function () {
 });
 
 Route::post('midtrans/notification/handling', [PaymentCallbackController::class, 'handling']);
+
+require __DIR__.'/auth.php';

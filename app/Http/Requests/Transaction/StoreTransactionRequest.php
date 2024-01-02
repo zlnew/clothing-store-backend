@@ -2,29 +2,36 @@
 
 namespace App\Http\Requests\Transaction;
 
+use App\Models\CartItem;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\ValidationException;
 
 class StoreTransactionRequest extends FormRequest
 {
     public function rules(): array
     {
         return [
-            'promo_code' => ['nullable', 'string', 'exists:vouchers,code'],
-            'note' => ['nullable', 'string'],
-            'items' => ['required', 'array'],
-            'items.*.name' => ['required', 'string'],
-            'items.*.quantity' => ['required', 'numeric', 'min:1'],
-            'items.*.price' => ['required', 'numeric'],
-            'items.*.size' => ['required', 'string'],
-            'items.*.product' => ['required', 'array'],
-            'items.*.product.id' => ['required', 'numeric', 'exists:products'],
-            'items.*.product.category' => ['required', 'in:all,men,women'],
-            'items.*.product.name' => ['required', 'string'],
-            'items.*.product.price' => ['required', 'numeric', 'min:1'],
-            'items.*.product.sizes' => ['required', 'array'],
-            'items.*.product.image' => ['required', 'string'],
-            'items.*.product.description' => ['required', 'string'],
-            'items.*.product.discount_percentage' => ['required', 'numeric']
+            'voucher_code' => ['nullable', 'string', 'exists:vouchers,code'],
+            'note' => ['nullable', 'string']
         ];
+    }
+
+    public function check(): void
+    {
+        $user = $this->user();
+
+        $cartItemsCount = CartItem::query()->where('user_id', $user->id)->count();
+
+        if ($cartItemsCount < 1) {
+            throw ValidationException::withMessages([
+                'checkout' => 'You must have at least one item in your cart'
+            ]);
+        }
+
+        if (!isset($user->customerDetails)) {
+            throw ValidationException::withMessages([
+                'checkout' => 'You must fill your customer details before making a checkout'
+            ]);
+        }
     }
 }

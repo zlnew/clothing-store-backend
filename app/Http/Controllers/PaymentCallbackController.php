@@ -23,6 +23,12 @@ class PaymentCallbackController extends Controller
                     ->where('order_id', $transaction->order_id)
                     ->update(['status' => TransactionStatus::SETTLEMENT]);
             }
+
+            if ($callback->isPending()) {
+                Transaction::query()
+                    ->where('order_id', $transaction->order_id)
+                    ->update(['status' => TransactionStatus::PENDING]);
+            }
  
             if ($callback->isExpire()) {
                 DB::transaction(function () use ($transaction) {

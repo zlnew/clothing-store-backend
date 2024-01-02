@@ -3,6 +3,7 @@ namespace App\Enums;
 
 enum TransactionStatus: string
 {
+    case CREATED = 'created';
     case PENDING = 'pending';
     case EXPIRED = 'expired';
     case CANCELLED = 'cancelled';

@@ -6,11 +6,13 @@ use App\Enums\TransactionStatus;
 use App\Http\Requests\Transaction\StoreTransactionRequest;
 use App\Http\Requests\Transaction\UpdateTransactionRequest;
 use App\Http\Resources\TransactionResource;
+use App\Models\CartItem;
 use App\Models\Product;
 use App\Models\Transaction;
 use App\Models\TransactionDetail;
 use App\Models\Voucher;
 use App\Services\Midtrans\CreateSnapTokenService;
+use App\Services\Midtrans\TransactionService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Symfony\Component\Uid\Ulid;
@@ -30,7 +32,8 @@ class TransactionController extends Controller
 
         if (isset($request->status) && $request->status === 'active') {
             $this->transaction->where(function ($query) {
-                $query->where('status', TransactionStatus::PENDING)
+                $query->where('status', TransactionStatus::CREATED)
+                    ->orWhere('status', TransactionStatus::PENDING)
                     ->orWhere('status', TransactionStatus::SETTLEMENT)
                     ->orWhere('status', TransactionStatus::ON_PROCESS)
                     ->orWhere('status', TransactionStatus::ON_PROCESS);
@@ -59,31 +62,31 @@ class TransactionController extends Controller
         try {
             DB::beginTransaction();
 
+            $request->check();
+
             $validated = $request->safe();
+            $cartItems = CartItem::query()->where('user_id', $request->user()->id);
             $voucherId = null;
             $totalDiscountAmount = 0;
     
-            if (isset($validated->promo_code)) {
+            if (isset($validated->voucher_code)) {
                 $voucher = Voucher::query()
-                    ->where('code', $validated->promo_code)
+                    ->where('code', $validated->voucher_code)
                     ->first();
 
                 $voucherId = $voucher->id;
             }
     
-            $subtotal = collect($validated->items)->map(function ($item) {
-                $item = (object)$item;
-                $item->product = (object)$item->product;
-
-                $price = $item->product->price;
+            $subtotal = collect($cartItems->get())->map(function ($item) {
                 $quantity = $item->quantity;
-                $discountPercentage = $item->product->discount_percentage;
-                $priceAmount = $price * $quantity;
-                $discountAmount = ($discountPercentage / 100) * $priceAmount;
-                $finalPrice = $priceAmount - $discountAmount;
-    
+                $productPrice = $item->product->price;
+                $productDiscountPercentage = $item->product->discount_percentage;
+                $productSubtotal = $productPrice * $quantity;
+                $discountAmount = ($productDiscountPercentage / 100) * $productSubtotal;
+                $finalPrice = $productSubtotal - $discountAmount;
                 return $finalPrice;
             });
+            
 
             if (isset($voucherId)) {
                 $totalDiscountAmount = ($voucher->discount_percentage / 100) * $subtotal->sum();
@@ -99,16 +102,13 @@ class TransactionController extends Controller
                 'note' => $validated->note
             ])->save();
 
-            foreach ($validated->items as $item) {
-                $item = (object)$item;
-                $item->product = (object)$item->product;
-                
-                $price = $item->product->price;
+            foreach ($cartItems->get() as $item) {
                 $quantity = $item->quantity;
-                $discountPercentage = $item->product->discount_percentage;
-                $priceAmount = $price * $quantity;
-                $discountAmount = ($discountPercentage / 100) * $priceAmount;
-                $finalPrice = $priceAmount - $discountAmount;
+                $productPrice = $item->product->price;
+                $productDiscountPercentage = $item->product->discount_percentage;
+                $productSubtotal = $productPrice * $quantity;
+                $discountAmount = ($productDiscountPercentage / 100) * $productSubtotal;
+                $finalPrice = $productSubtotal - $discountAmount;
                 
                 $detail = new TransactionDetail([
                     'transaction_id' => $this->transaction->id,
@@ -128,13 +128,11 @@ class TransactionController extends Controller
 
             $itemDetails = collect($this->transaction->details)->map(function ($item) {
                 $item = (object)$item;
-                $price = $item->price / $item->quantity;
-             
                 return [
                     'id' => $item->id,
-                    'price' => $price,
+                    'price' => $item->price / $item->quantity,
                     'quantity' => $item->quantity,
-                    'name' => $item->name
+                    'name' => $item->name.' - '.$item->size
                 ];
             });
 
@@ -162,8 +160,8 @@ class TransactionController extends Controller
             
             $midtrans = new CreateSnapTokenService($transactionParams);
             $snap = $midtrans->getSnap();
-
             $this->transaction->fill($snap)->save();
+            $cartItems->delete();
 
             DB::commit();
     
@@ -185,7 +183,48 @@ class TransactionController extends Controller
 
     public function update(UpdateTransactionRequest $request, Transaction $transaction)
     {
-        //
+        $validated = $request->safe();
+        $transactionService = new TransactionService($transaction->order_id);
+
+        switch ($validated->action) {
+            case 'cancel':
+                if ($transaction->status === TransactionStatus::PENDING) {
+                    return $transactionService->cancel();
+                }
+                
+                if ($transaction->status === TransactionStatus::CREATED) {
+                    DB::transaction(function () use ($transaction) {
+                        $transactionDetails = TransactionDetail::query()
+                            ->where('transaction_id', $transaction->id);
+    
+                        foreach ($transactionDetails->get() as $item) {
+                            $product = (object)$item->product;
+    
+                            Product::query()
+                                ->where('id', $product->id)
+                                ->increment('stock', $item->quantity);
+                        }
+    
+                        $transactionDetails->delete();
+                        $transaction->delete();
+                    });
+
+                    return response(['message' => 'Transaction cancelled successfully'], 200);
+                }
+                
+                break;
+
+            case 'refund':
+                return $transactionService->refund();
+                break;
+            
+            default:
+                break;
+        }
+
+        return response([
+            'message' => 'Error occurred while updating transaction'
+        ], 500);
     }
 
     public function destroy(Transaction $transaction)
