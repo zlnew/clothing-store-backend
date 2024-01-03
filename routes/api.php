@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\CartItemController;
 use App\Http\Controllers\ProductController;
+use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\TransactionController;
 use App\Http\Controllers\VoucherController;
 use Illuminate\Http\Request;
@@ -21,12 +22,19 @@ use Illuminate\Support\Facades\Route;
 
 Route::apiResource('products', ProductController::class)->only(['index', 'show']);
 Route::apiResource('vouchers', VoucherController::class)->only(['index', 'show']);
+Route::get('/authorize', function () {
+    return response()->json(auth()->check());
+});
 
 Route::middleware('auth:sanctum')->group(function () {
-    Route::get('/authorize', fn () => auth()->check());
-
     Route::get('/user', function (Request $request) {
         return $request->user();
+    });
+
+    Route::prefix('/profiles')->group(function () {
+        Route::patch('/account', [ProfileController::class, 'updateAccount']);
+        Route::patch('/customer-details', [ProfileController::class, 'updateCustomerDetails']);
+        Route::patch('/change-password', [ProfileController::class, 'changePassword']);
     });
 
     Route::apiResource('products', ProductController::class)->except(['index', 'show']);
