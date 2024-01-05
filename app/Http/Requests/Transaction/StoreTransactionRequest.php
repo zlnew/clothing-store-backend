@@ -24,13 +24,19 @@ class StoreTransactionRequest extends FormRequest
 
         if ($cartItemsCount < 1) {
             throw ValidationException::withMessages([
-                'checkout' => 'You must have at least one item in your cart'
+                'status' => 'You must have at least one item in your cart'
+            ]);
+        }
+
+        if ($user->email_verified_at === null) {
+            throw ValidationException::withMessages([
+                'status' => 'You must verify your email address before making a checkout'
             ]);
         }
 
         if (!isset($user->customerDetails)) {
             throw ValidationException::withMessages([
-                'checkout' => 'You must fill your customer details before making a checkout'
+                'status' => 'You must fill your customer details before making a checkout'
             ]);
         }
     }

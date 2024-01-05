@@ -28,6 +28,8 @@ class CartItemController extends Controller
 
     public function store(StoreCartItemRequest $request)
     {
+        $request->check();
+
         $validated = $request->safe();
 
         $cartItem = $this->cartItem->query()

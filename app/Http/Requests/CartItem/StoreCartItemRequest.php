@@ -4,6 +4,7 @@ namespace App\Http\Requests\CartItem;
 
 use App\Rules\MaxProductQuantityAvailable;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\ValidationException;
 
 class StoreCartItemRequest extends FormRequest
 {
@@ -19,5 +20,14 @@ class StoreCartItemRequest extends FormRequest
                 new MaxProductQuantityAvailable($this->input('product_id'))
             ]
         ];
+    }
+
+    public function check()
+    {
+        if (!auth()->check()) {
+            throw ValidationException::withMessages([
+                'status' => 'You must login first to add items to the cart'
+            ]);
+        }
     }
 }
